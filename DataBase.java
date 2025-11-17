@@ -217,5 +217,6 @@ public class DataBase {
         tbcreate.table();
         insert append = new insert();
         append.insert_value();
+        System.out.println("프로그램 종료");
     }
 }
