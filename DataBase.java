@@ -51,7 +51,7 @@ class create_table { //테이블 생성
         String tableName = "Users"; // 유저 계정
         String tableName1 = "Solution"; // 솔루션 종류
         String tableName2 = "Routines"; // 루틴
-        String tableName3 = "Routine_Items"; // 루틴 순서
+        // String tableName3 = "Routine_Items"; // 루틴 순서
 
         String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                  + "ID VARCHAR(20) NOT NULL,"
@@ -62,9 +62,7 @@ class create_table { //테이블 생성
                  +")";
         String sql1 = "CREATE TABLE IF NOT EXISTS " + tableName1 + " ("
                  + "Solution_num INTEGER(100) NOT NULL,"
-                 // [수정] 이름을 저장하기에 20자는 부족할 수 있으므로 100자로 늘림
                  + "Solution_name VARCHAR(100) NOT NULL," 
-                 // [수정] 카테고리(손목/손가락)를 위해 10자 -> 20자로 늘림
                  + "Category VARCHAR(20) NOT NULL," 
                  + "Description TEXT," 
                  + "Video_URL VARCHAR(255)," 
@@ -74,11 +72,13 @@ class create_table { //테이블 생성
         String sql2 = "CREATE TABLE IF NOT EXISTS " + tableName2 + " ("
                  + "Routine_ID INT NOT NULL AUTO_INCREMENT," 
                  + "ID VARCHAR(20) NOT NULL," 
-                 + "Routine_Name VARCHAR(50) NOT NULL," 
+                 + "Routine_Name VARCHAR(50) NOT NULL,"
+                 + "Solution_num INT NOT NULL," 
                  + "PRIMARY KEY (Routine_ID)," 
                  + "FOREIGN KEY (ID) REFERENCES " + tableName + "(ID)"
+                 + "FOREIGN KEY (Solution_num) REFERENCES " + tableName1 + "(Solution_num)"
                  +")";
-        String sql3 = "CREATE TABLE IF NOT EXISTS " + tableName3 + " ("
+         /*String sql3 = "CREATE TABLE IF NOT EXISTS " + tableName3 + " ("
                  + "Routine_ID INT NOT NULL,"
                  + "Solution_num INT NOT NULL,"
                  + "Sequence INT NOT NULL DEFAULT 1,"
@@ -86,6 +86,7 @@ class create_table { //테이블 생성
                  + "FOREIGN KEY (Routine_ID) REFERENCES " + tableName2 + "(Routine_ID),"
                  + "FOREIGN KEY (Solution_num) REFERENCES " + tableName1 + "(Solution_num)"
                  + ")";
+                 */
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -100,8 +101,8 @@ class create_table { //테이블 생성
                     System.out.println("솔루션(재활 종류)테이블 " + tableName1 + " 생성 완료 (또는 이미 존재함)");
                     stmt.executeUpdate(sql2);
                     System.out.println("루틴(선택하여 만든 솔루션)테이블 " + tableName2 + " 생성 완료 (또는 이미 존재함)");
-                    stmt.executeUpdate(sql3);
-                    System.out.println("루틴순서(선택하여 만든 솔루션)테이블 " + tableName3 + " 생성 완료 (또는 이미 존재함)");
+                    //stmt.executeUpdate(sql3);
+                    //System.out.println("루틴순서(선택하여 만든 솔루션)테이블 " + tableName3 + " 생성 완료 (또는 이미 존재함)");
                  }
             } catch(ClassNotFoundException e) {
                 System.out.println("JDBC 드라이버를 찾을 수 없습니다.");
@@ -116,8 +117,8 @@ class create_table { //테이블 생성
     }
 }
 
+
 class insert {
-    // [수정] 'Soultion' -> 'Solution' 오타 수정
     private boolean check_duplicate(Connection conn, int Solution_num) throws SQLException { //데이터가 이미 존재하는지 확인
         String checksql = "SELECT COUNT(*) FROM Solution WHERE Solution_num = ?";
 
@@ -125,7 +126,6 @@ class insert {
             pstmt.setInt(1, Solution_num);
 
             try (ResultSet rs = pstmt.executeQuery()) {
-                // [수정] rs.next()를 두 번 호출하던 로직 오류 수정
                 if (rs.next()) {
                     return rs.getInt(1) > 0; // 1개 이상이면 true 반환
                 }
@@ -146,6 +146,40 @@ class insert {
             pstmt.executeUpdate();
         }
     }
+
+    public void insert_User_sql(Connection conn, String ID, String PASSWORD, String NICKNAME, String PHONENUMBER) throws SQLException{
+        String sql = "INSERT INTO Users (ID, PASSWORD, NICKNAME, PHONENUMBER) VALUES (?, ?, ?, ?)";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pstmt.setString(1, sql);
+            pstmt.setString(2, PASSWORD);
+            pstmt.setString(3, NICKNAME);
+            pstmt.setString(4, PHONENUMBER);
+
+            pstmt.executeUpdate();
+        }
+    }
+
+    public void insert_Routine_sql(Connection conn, int Routine_ID, String ID, String Routine_Name) throws SQLException {
+        String sql = "INSERT IN RTO Routines (Routine_ID, ID, Routine_Name) VALUES (?, ?, ?)";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pstmt.setInt(1, Routine_ID);
+            pstmt.setString(2, ID);
+            pstmt.setString(3, Routine_Name);
+
+            pstmt.executeUpdate();
+        }
+    }
+
+    public void alter_Routine_sql(Connection conn, String ID, String Routine_Name) throws SQLException { 
+        String sql= "ALTER TABLE Routines ADD COLUMN IF NOT EXISTS " + Routine_Name + " VARCHAR(50)";
+        // String sql2 = 다음에 할 일: Routines 테이블에 Solution_num 외래 키 추가 및 번호 수정하는 구문 작성
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pstmt.executeUpdate();
+        }
+    }
+
 
     public void insert_value(){
         String url = "jdbc:mysql://localhost:3306/Accounts"; // DB 연결
