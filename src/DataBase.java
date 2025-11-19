@@ -66,9 +66,7 @@ class create_table { //테이블 생성
                  +")";
         String sql1 = "CREATE TABLE IF NOT EXISTS " + tableName1 + " ("
                  + "Solution_num INTEGER(100) NOT NULL,"
-                 // [수정] 이름을 저장하기에 20자는 부족할 수 있으므로 100자로 늘림
                  + "Solution_name VARCHAR(100) NOT NULL," 
-                 // [수정] 카테고리(손목/손가락)를 위해 10자 -> 20자로 늘림
                  + "Category VARCHAR(20) NOT NULL," 
                  + "Description TEXT," 
                  + "Video_URL VARCHAR(255)," 
@@ -78,8 +76,10 @@ class create_table { //테이블 생성
         String sql2 = "CREATE TABLE IF NOT EXISTS " + tableName2 + " ("
                  + "Routine_ID INT NOT NULL AUTO_INCREMENT," 
                  + "ID VARCHAR(20) NOT NULL," 
+                 + "Solution_num INT NOT NULL,"
                  + "Routine_Name VARCHAR(50) NOT NULL," 
-                 + "PRIMARY KEY (Routine_ID)," 
+                 + "PRIMARY KEY (Routine_ID),"
+                 + "FOREIGN KEY (Solution_num) REFERENCES " + tableName1 + "(Solution_num),"
                  + "FOREIGN KEY (ID) REFERENCES " + tableName + "(ID)"
                  +")";
         String sql3 = "CREATE TABLE IF NOT EXISTS " + tableName3 + " ("
@@ -172,12 +172,30 @@ class insert {
             pstmt.executeUpdate();
         }
     }
-    // Routines 테이블 수정 메서드 <1119 기준 미완>
-    public void alter_Routine_sql(Connection conn, String ID, String Routine_Name) throws SQLException { 
-        String sql= "ALTER TABLE Routines ADD COLUMN IF NOT EXISTS " + Routine_Name + " VARCHAR(50)";
-        // String sql2 = 다음에 할 일: Routines 테이블에 Solution_num 외래 키 추가 및 번호 수정하는 구문 작성
+    // Routines 테이블에서 루틴 이름 수정 메서드
+    public void update_RoutineName_sql(Connection conn, String ID, String Old_Routine_Name, String New_Routine_Name) throws SQLException { 
+        String sql= "UPDATE " + tableName2 + " SET Routine_name = ? WHERE ID = ? AND Routine_Name = ?";
+        // ID가 일치하고, 원래 이름이 일치하는 행을 찾아 이름으 새로운 이름으로 변경
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
-            pstmt.executeUpdate();
+            pstmt.setSting(1, New_Routine_Name); // 바꿀 새 이름
+            pstmt.setString(2, ID); // 사용자 ID
+            pstmt.setString(3, Old_Routine_Name); // 원래 이름
+            //git test
+            int result = pstmt.executeUpdate();
+            // System.out.println("수정된 루틴 개수: " + result);
+        }
+    }
+    // 솔루션 번호 수정 메서드
+    public void update_RoutineSolution_sql(Connection conn, int Routine_ID, int Old_Solution_num, int New_Solution_num) throws SQLException {
+        String sql = "UPDATE " + tableName2 + " SET Solution_num = ? WHERE Routine_ID = ? AND Solution_num = ?";
+        // 루틴 ID가 일치하고, 원래 솔루션 번호가 일치하는 행을 찾아 솔루션 번호를 새로운 번호로 변경
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pstmt.setInt(1, New_Solution_num); // 바꿀 새 솔루션 번호
+            pstmt.setInt(2, Routine_ID); // 루틴 ID
+            pstmt.setInt(3, Old_Solution_num); // 원래 솔루션 번호
+
+            int result = pstmt.executeUpdate();
+            // System.out.println("수정된 루틴 아이템 개수: " + result);
         }
     }
 
