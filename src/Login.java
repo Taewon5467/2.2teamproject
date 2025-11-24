@@ -44,10 +44,14 @@ public class Login extends JFrame  {
                 if(isDup)
                 {
                     System.out.println("로그인 성공하였습니다.");
+                    SessionManager.login(id); 
+
                     insert inserts = new insert();
                     inserts.insert_value();
 
                     new Mainscreen();
+                    new Mainscreen().setVisible(true); // 메인 화면 표시
+                    dispose();
                     setVisible(false);
                 }
                 else
@@ -82,5 +86,3 @@ public class Login extends JFrame  {
     }
 
 }
-
-

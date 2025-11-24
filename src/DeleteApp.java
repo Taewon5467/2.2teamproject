@@ -31,7 +31,13 @@ public class DeleteApp implements BodyPartClickHandler {
     private final Map<String, String[]> exerciseDatabase = new HashMap<>();
 
     // 데이터 저장 파일명
-    private static final String DATA_FILE = "exercise_data.ser";
+    private String getUserDataFile(){
+        String userID = SessionManager.currentUserID;
+        if (userID == null) {
+            return "default_exercise_data.ser";
+        }
+        return "_exercise_data.ser";
+    }
 
     public DeleteApp() {
         // 임시 운동 DB 초기화
@@ -151,13 +157,30 @@ public class DeleteApp implements BodyPartClickHandler {
      * 앱 종료 시 Map 데이터를 파일에 저장 (Serialization)
      */
     @SuppressWarnings("unchecked")
+    // CreateApp.java 의 saveData() 메소드를 이걸로 교체하세요.
+
     private void saveData() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(DATA_FILE))) {
-            oos.writeObject(selectedExercises);
-            System.out.println("데이터 저장 완료: " + DATA_FILE);
-        } catch (IOException e) {
+        // 1. 현재 로그인한 ID 가져오기
+        String currentID = SessionManager.getCurrentUserID();
+
+        // 2. 로그인이 안 된 상태면 저장 막기
+        if (currentID == null || currentID.trim().isEmpty()) {
+            System.out.println("오류: 로그인 정보가 없습니다.");
+            return;
+        }
+
+        // 3. DB에 저장 시도
+        try {
+            SolutionDAO dao = new SolutionDAO();
+            // 파일 저장 코드(ObjectOutputStream)는 다 지우고, 이 줄만 남겨야 합니다.
+            dao.saveUserSelections(currentID, selectedExercises);
+            
+            System.out.println("DB 저장 성공! ID: " + currentID);
+            System.out.println("저장된 데이터: " + selectedExercises);
+            
+        } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(frame, "데이터 저장 중 오류 발생", "오류", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(frame, "DB 저장 실패: " + e.getMessage());
         }
     }
 
@@ -166,19 +189,31 @@ public class DeleteApp implements BodyPartClickHandler {
      */
     @SuppressWarnings("unchecked")
     private void loadData() {
-        File dataFile = new File(DATA_FILE);
-        if (dataFile.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(dataFile))) {
-                selectedExercises = (Map<String, Set<String>>) ois.readObject();
-                System.out.println("데이터 로드 완료: " + DATA_FILE);
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(null, "데이터 로드 중 오류 발생. 새 데이터로 시작합니다.", "오류", JOptionPane.ERROR_MESSAGE);
-                selectedExercises = new HashMap<>();
-            }
-        } else {
-            System.out.println("저장된 데이터 없음. 새 데이터로 시작합니다.");
+    String currentID = SessionManager.getCurrentUserID(); // [필수] 로그인 ID 로드
+    
+        if (currentID == null) {
+            // 로그인 정보가 없으면 빈 맵으로 시작
             selectedExercises = new HashMap<>();
+            return;
+        }
+        
+        try {
+            SolutionDAO dao = new SolutionDAO();
+            // [수정] DB에서 유저 ID를 기준으로 데이터를 로드
+            Map<String, Set<String>> loadedData = dao.loadUserSelections(currentID);
+            
+            if (loadedData != null && !loadedData.isEmpty()) {
+                selectedExercises = loadedData;
+                System.out.println("DB 데이터 로드 완료: " + currentID);
+            } else {
+                selectedExercises = new HashMap<>();
+                System.out.println("DB에 저장된 데이터 없음. 새 데이터로 시작합니다.");
+            }
+        } catch (Exception e) {
+            // 로드 실패 시 초기화
+            e.printStackTrace();
+            selectedExercises = new HashMap<>();
+            JOptionPane.showMessageDialog(null, "데이터 로드 중 오류 발생. 새 데이터로 시작합니다.", "오류", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

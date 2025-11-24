@@ -12,12 +12,15 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+
 
 class create_database { //db생성
     public void DataBase(){
         String url = "jdbc:mysql://localhost:3306/"; // MySQL 서버 자체에 연결
         String id = "root";
-        String pw = "ansxodnjs5467";
+        String pw = "ckddl0315";
         String dbname = "Accounts";
 
         String sql = "CREATE DATABASE IF NOT EXISTS " + dbname;
@@ -51,7 +54,7 @@ class create_table { //테이블 생성
     public void table(){
         String url = "jdbc:mysql://localhost:3306/Accounts";
         String id = "root";
-        String pw = "ansxodnjs5467";
+        String pw = "ckddl0315";
         String tableName = "Users"; // 유저 계정
         String tableName1 = "Solution"; // 솔루션 종류
         String tableName2 = "Routines"; // 루틴
@@ -76,10 +79,10 @@ class create_table { //테이블 생성
         String sql2 = "CREATE TABLE IF NOT EXISTS " + tableName2 + " ("
                  + "Routine_ID INT NOT NULL AUTO_INCREMENT," 
                  + "ID VARCHAR(20) NOT NULL," 
-                 + "Solution_num INT NOT NULL,"
+                //  + "Solution_num INT NOT NULL,"
                  + "Routine_Name VARCHAR(50) NOT NULL," 
                  + "PRIMARY KEY (Routine_ID),"
-                 + "FOREIGN KEY (Solution_num) REFERENCES " + tableName1 + "(Solution_num),"
+                //  + "FOREIGN KEY (Solution_num) REFERENCES " + tableName1 + "(Solution_num),"
                  + "FOREIGN KEY (ID) REFERENCES " + tableName + "(ID)"
                  +")";
         String sql3 = "CREATE TABLE IF NOT EXISTS " + tableName3 + " ("
@@ -120,6 +123,7 @@ class create_table { //테이블 생성
     }
 }
 class insert {
+    private static final String ROUTINES_TABLE = "Routines";
     private boolean check_duplicate(Connection conn, int Solution_num) throws SQLException { //데이터가 이미 존재하는지 확인
         String checksql = "SELECT COUNT(*) FROM Solution WHERE Solution_num = ?";
 
@@ -152,7 +156,7 @@ class insert {
         String sql = "INSERT INTO Users (ID, PASSWORD, NICKNAME, PHONENUMBER) VALUES (?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
-            pstmt.setString(1, sql);
+            pstmt.setString(1, ID);
             pstmt.setString(2, PASSWORD);
             pstmt.setString(3, NICKNAME);
             pstmt.setString(4, PHONENUMBER);
@@ -162,7 +166,8 @@ class insert {
     }
     // Routines 테이블에 루틴 정보 삽입 메서드
     public void insert_Routine_sql(Connection conn, int Routine_ID, String ID, String Routine_Name) throws SQLException {
-        String sql = "INSERT IN RTO Routines (Routine_ID, ID, Routine_Name) VALUES (?, ?, ?)";
+        // insert.java의 insert_Routine_sql 메소드 (수정된 코드)
+        String sql = "INSERT INTO Routines (Routine_ID, ID, Routine_Name) VALUES (?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
             pstmt.setInt(1, Routine_ID);
@@ -174,10 +179,10 @@ class insert {
     }
     // Routines 테이블에서 루틴 이름 수정 메서드
     public void update_RoutineName_sql(Connection conn, String ID, String Old_Routine_Name, String New_Routine_Name) throws SQLException { 
-        String sql= "UPDATE " + tableName2 + " SET Routine_name = ? WHERE ID = ? AND Routine_Name = ?";
+        String sql= "UPDATE " + ROUTINES_TABLE + " SET Routine_name = ? WHERE ID = ? AND Routine_Name = ?";
         // ID가 일치하고, 원래 이름이 일치하는 행을 찾아 이름으 새로운 이름으로 변경
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
-            pstmt.setSting(1, New_Routine_Name); // 바꿀 새 이름
+            pstmt.setString(1, New_Routine_Name); // 바꿀 새 이름
             pstmt.setString(2, ID); // 사용자 ID
             pstmt.setString(3, Old_Routine_Name); // 원래 이름
             //git test
@@ -187,7 +192,7 @@ class insert {
     }
     // 솔루션 번호 수정 메서드
     public void update_RoutineSolution_sql(Connection conn, int Routine_ID, int Old_Solution_num, int New_Solution_num) throws SQLException {
-        String sql = "UPDATE " + tableName2 + " SET Solution_num = ? WHERE Routine_ID = ? AND Solution_num = ?";
+        String sql = "UPDATE " + ROUTINES_TABLE + " SET Solution_num = ? WHERE Routine_ID = ? AND Solution_num = ?";
         // 루틴 ID가 일치하고, 원래 솔루션 번호가 일치하는 행을 찾아 솔루션 번호를 새로운 번호로 변경
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
             pstmt.setInt(1, New_Solution_num); // 바꿀 새 솔루션 번호
@@ -202,7 +207,7 @@ class insert {
     public void insert_value(){
         String url = "jdbc:mysql://localhost:3306/Accounts"; // DB 연결
         String id = "root";
-        String pw = "ansxodnjs5467";
+        String pw = "ckddl0315";
         //파일 경로
         String filePath = "Paintext.txt";
 
@@ -211,7 +216,7 @@ class insert {
             System.out.println("JDBC 드라이버 로드 성공.");
 
             try (Connection conn = DriverManager.getConnection(url, id, pw);
-                 Scanner scanner = new Scanner(new File(filePath), StandardCharsets.UTF_8)) {
+                 Scanner scanner = new Scanner(new File(filePath), "UTF-8")) {
                 
                 System.out.println("데이터베이스 연결 성공. 파일 읽는 중...(UTF-8 모드)...");
 
@@ -267,7 +272,7 @@ public boolean isIdDuplicate(String id)
 {
     String url = "jdbc:mysql://localhost:3306/Accounts";
     String id1 = "root";
-    String pw = "ansxodnjs5467";
+    String pw = "ckddl0315";
     String tableName ="Users";
     String sql ="SELECT COUNT(*) FROM " + tableName + " WHERE ID =? ";
 
@@ -301,7 +306,7 @@ public boolean isLogin(String id,String pw)
 {
     String url = "jdbc:mysql://localhost:3306/Accounts";
     String id1 = "root";
-    String pw1 = "ansxodnjs5467";
+    String pw1 = "ckddl0315";
     String tableName ="Users";
     String sql ="SELECT * FROM " + tableName + " WHERE ID =? and PASSWORD =? ";
 
@@ -336,7 +341,7 @@ class insertpw
     {
         String url = "jdbc:mysql://localhost:3306/Accounts";
         String id = "root";
-        String pw = "ansxodnjs5467";
+        String pw = "ckddl0315";
         String tableName = "Users";
         String sql = "INSERT INTO " + tableName + " (ID, PASSWORD, NICKNAME, PHONENUMBER) VALUES (?, ?, ?, ?)";
         try {
@@ -375,7 +380,7 @@ class insertpw
 class SolutionDAO {
         private static String url = "jdbc:mysql://localhost:3306/Accounts";
         private static  String id = "root";
-        private static  String pw = "ansxodnjs5467";
+        private static  String pw = "ckddl0315";
         //읽어온 데이터를 보관함
         private Map<String,String[]> exerciseDatabase = new HashMap<>();
 
@@ -384,6 +389,154 @@ class SolutionDAO {
         {
             return exerciseDatabase;
         }
+        // SolutionDAO (또는 RoutineDAO)에 추가
+    public void saveUserSelections(String userID, Map<String, Set<String>> selections) throws SQLException {
+        String url = "jdbc:mysql://localhost:3306/Accounts";
+        String id = "root";
+        String pw = "ckddl0315";
+        
+        // 트랜잭션 관리를 위해 AutoCommit을 끄고 시작합니다.
+        try (Connection conn = DriverManager.getConnection(url, id, pw)) {
+            conn.setAutoCommit(false);
+            try {
+                // 1. 기존 루틴 삭제 (새로 저장하기 위해 해당 유저의 모든 루틴 초기화)
+                deleteUserRoutines(conn, userID); // 아래 deleteUserRoutines 메소드 필요
+
+                for (Map.Entry<String, Set<String>> entry : selections.entrySet()) {
+                    String partName = entry.getKey();
+                    Set<String> exercises = entry.getValue();
+
+                    if (exercises == null || exercises.isEmpty()) continue;
+
+                    // 2. 부위(partName)별로 Routines 테이블에 삽입하고 Routine_ID를 얻어옴
+                    int routineId = insertNewRoutine(conn, userID, partName); // 아래 insertNewRoutine 메소드 필요
+
+                    int sequence = 1;
+                    for (String exerciseName : exercises) {
+                        // 3. 운동 이름으로 Solution_num을 조회
+                        int solutionNum = getSolutionNumByName(conn, exerciseName); // 아래 getSolutionNumByName 메소드 필요
+
+                        // 4. Routine_Items에 삽입
+                        if (solutionNum != -1) {
+                            insertRoutineItem(conn, routineId, solutionNum, sequence++); // 아래 insertRoutineItem 메소드 필요
+                        }
+                    }
+                }
+                conn.commit(); // 모든 작업 성공 시 커밋
+                System.out.println("DB 저장 완료: 사용자 " + userID + "의 루틴이 저장되었습니다.");
+            } catch (SQLException e) {
+                conn.rollback(); // 오류 발생 시 롤백
+                e.printStackTrace();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true); // 원래대로 복구
+            }
+        }
+    }
+    // SolutionDAO (또는 RoutineDAO)에 추가
+    private void deleteUserRoutines(Connection conn, String userID) throws SQLException {
+        // 1. Routine_Items에서 해당 유저의 루틴 아이템 먼저 삭제
+        String sqlDeleteItems = "DELETE RI FROM Routine_Items RI JOIN Routines R ON RI.Routine_ID = R.Routine_ID WHERE R.ID = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlDeleteItems)) {
+            pstmt.setString(1, userID);
+            pstmt.executeUpdate();
+        }
+        // 2. Routines 테이블에서 해당 유저의 루틴 삭제
+        String sqlDeleteRoutines = "DELETE FROM Routines WHERE ID = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlDeleteRoutines)) {
+            pstmt.setString(1, userID);
+            pstmt.executeUpdate();
+        }
+    }
+
+    private int insertNewRoutine(Connection conn, String userID, String routineName) throws SQLException {
+        String sql = "INSERT INTO Routines (ID, Routine_Name) VALUES (?, ?)";
+        //int solutionNumDefault = 1; // Routines 테이블의 FK 제약조건을 맞추기 위한 임시값
+        
+        // AUTO_INCREMENT 키를 얻기 위해 Statement.RETURN_GENERATED_KEYS 사용
+        try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setString(1, userID);
+            pstmt.setString(2, routineName);
+            // pstmt.setInt(3, solutionNumDefault);
+            pstmt.executeUpdate();
+
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1); // 새로 생성된 Routine_ID 반환
+                } else {
+                    throw new SQLException("Routine ID 생성 실패.");
+                }
+            }
+        }
+    }
+    // SolutionDAO.java 클래스 내부에 추가
+
+    /**
+     * 💡 [추가] 사용자 ID를 기준으로 저장된 모든 운동 선택 데이터를 로드합니다.
+     * @param userID 현재 로그인한 사용자의 ID
+     * @return Map<부위 이름, Set<운동 이름>>
+     */
+    public Map<String, Set<String>> loadUserSelections(String userID) throws SQLException, ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        // JDBC 연결 정보 (필드 값 사용)
+        String dbUrl = this.url; 
+        String dbId = this.id;
+        String dbPw = this.pw;
+        
+        // 결과 맵: Map<부위 이름, Set<운동 이름>>
+        Map<String, Set<String>> userSelections = new HashMap<>(); 
+        
+        // SQL 쿼리: Routines(R)에서 사용자 ID를 기준으로 조인하여 운동 이름(S.Solution_name)과 
+        // 부위 이름(R.Routine_Name)을 가져옴. 순서(Sequence)대로 정렬.
+        String sql = "SELECT R.Routine_Name, S.Solution_name " +
+                    "FROM Routines R " +
+                    "JOIN Routine_Items RI ON R.Routine_ID = RI.Routine_ID " +
+                    "JOIN Solution S ON RI.Solution_num = S.Solution_num " +
+                    "WHERE R.ID = ? " +
+                    "ORDER BY R.Routine_ID, RI.Sequence"; 
+
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbId, dbPw);
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, userID);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String partName = rs.getString("Routine_Name");
+                    String exerciseName = rs.getString("Solution_name");
+                    
+                    // 해당 부위에 대한 Set이 없으면 새로 HashSet을 생성 (putIfAbsent)
+                    userSelections.putIfAbsent(partName, new HashSet<>());
+                    
+                    // Set에 운동 이름 추가
+                    userSelections.get(partName).add(exerciseName);
+                }
+            }
+        }
+        return userSelections;
+    }
+    private int getSolutionNumByName(Connection conn, String exerciseName) throws SQLException {
+        String sql = "SELECT Solution_num FROM Solution WHERE Solution_name = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, exerciseName);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("Solution_num");
+                }
+            }
+        }
+        return -1; // 찾지 못한 경우
+    }
+
+    private void insertRoutineItem(Connection conn, int routineId, int solutionNum, int sequence) throws SQLException {
+        String sql = "INSERT INTO Routine_Items (Routine_ID, Solution_num, Sequence) VALUES (?, ?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, routineId);
+            pstmt.setInt(2, solutionNum);
+            pstmt.setInt(3, sequence);
+            pstmt.executeUpdate();
+        }
+    }
     public void Solution()
     {
         String sql = "SELECT Category, Solution_name " +"FROM Solution " +"ORDER BY Category, Solution_num";

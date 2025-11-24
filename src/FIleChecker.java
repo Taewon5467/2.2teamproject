@@ -5,7 +5,7 @@ public class FIleChecker {
     public static void main(String[] args) {
         
         // 확인할 파일 이름 (기본 - 프로젝트 루트 폴더에 있을 경우)
-        String filePath = "C:\\Users\\gg935\\source\\Src_file\\team_project\\First\\Paintext.txt";
+        String filePath = "C:\\Temp\\Paintext.txt";
 
 
         File f = new File(filePath);
