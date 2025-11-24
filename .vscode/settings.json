@@ -11,7 +11,9 @@
         "dbname",
         "insertpw",
         "jdbc",
+        "logincheck",
         "Paintext",
+        "passwordcheck",
         "pstmt"
     ]
 }

@@ -1,10 +1,13 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class Mainscreen extends JFrame {
     public JMenuBar menuBar;
-    public String[] categories = {"전체", "목", "어깨", "팔꿈치", "손목", "허리", "무릎", "발목"};
+    public String[] categories = {"전체", "목", "어깨", "팔꿈치", "손목", "허리", "무릎", "발목","고관절"};
     public JButton createButton, deleteButton;
     public JLabel progressLabel;
     private int totalGoals = 0; //전체 목표 개수
@@ -15,14 +18,28 @@ public class Mainscreen extends JFrame {
     private CardLayout cardLayout; 
     public JProgressBar progressBar;
 
+    private Map<String, Set<String>> userSelections = new HashMap<>();
     public Mainscreen()
     {
+       
         setTitle("RehabSolution : 메인화면");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(450, 560);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         
+        String loginUserId = SessionManager.getCurrentUserID();
+        if(loginUserId == null || loginUserId.isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, "로그인 정보가 없습니다.\n다시 로그인해 주세요.");
+            new Login();  // 로그인 화면 다시 띄우기
+            dispose();
+            return;
+        }
+
+        //DB에서 루틴 불러오기
+        loadUserSelectionsDB(loginUserId);
+
         // --- 1. 위쪽 패널 (NORTH) 구성 ---
         JPanel topPanel = new JPanel();
         topPanel.setPreferredSize(new Dimension(450, 130));
@@ -93,11 +110,11 @@ public class Mainscreen extends JFrame {
         for (String category : categories) {
             JMenu menu = new JMenu(category);
             menuBar.add(menu);
-            
+
+            //카테고리별 카드 생성
+            JComponent card =createCategoryCard(category);
+            cardContainer.add(card,category);
             // 💡 [필수] 카드 컨테이너에 부위별 빈 패널을 추가합니다.
-            // (실제 내용 패널은 여기에 들어가야 합니다.)
-            cardContainer.add(new JLabel("'" + category + "' 운동 목록이 표시됩니다.", SwingConstants.CENTER), category);
-            
             // [수정] JMenu 클릭 시 CardLayout을 전환하는 리스너만 남깁니다.
             menu.addMouseListener(new MouseAdapter() {
                 @Override
@@ -117,6 +134,9 @@ public class Mainscreen extends JFrame {
         add(topPanel, BorderLayout.NORTH);
         add(bottomPanel, BorderLayout.CENTER);
 
+        //DB에서 불러온 루틴 기반으로 전체 운동 계수 계산하여 ProgressBar에 반영
+        calTotalGoalsFromSelections();
+
         // 4. 프레임 표시
         setVisible(true);
     }
@@ -130,5 +150,85 @@ public class Mainscreen extends JFrame {
             percent = (int) ((doneGoals * 100.0) / totalGoals);
         }
         progressBar.setValue(percent);
+    }
+    private JComponent createCategoryCard(String category) {
+    JPanel contentPanel = new JPanel();
+    contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+    contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    // 🔹 1) "전체" 탭일 때: 모든 부위 + 운동 출력
+    if ("전체".equals(category)) {
+        if (userSelections.isEmpty()) {
+            contentPanel.add(new JLabel("저장된 루틴이 없습니다."));
+        } else {
+            for (Map.Entry<String, Set<String>> entry : userSelections.entrySet()) {
+                String partName = entry.getKey();
+                Set<String> exercises = entry.getValue();
+
+                // 부위 이름
+                contentPanel.add(new JLabel("[" + partName + "]"));
+
+                // 해당 부위 운동 목록
+                if (exercises != null) {
+                    for (String exName : exercises) {
+                        contentPanel.add(new JLabel("  • " + exName));
+                    }
+                }
+
+                // 부위 사이 간격
+                contentPanel.add(Box.createVerticalStrut(8));  // ← createVerticalst 오타 수정
+            }
+        }
+    }
+    else {
+        Set<String> exercises =userSelections.get(category);
+
+        if(exercises == null || exercises.isEmpty())
+        {
+            contentPanel.add(new JLabel("저장된 루틴이 없습니다."));
+        }else 
+        {
+            for (String exName :exercises)
+            {
+                contentPanel.add(new JLabel("• " + exName));
+            }
+        }
+    }
+
+        JScrollPane scrollPane =new JScrollPane(contentPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        return scrollPane;
+    }
+    private void loadUserSelectionsDB(String loginUserId) {
+        try {
+            SolutionDAO dao = new SolutionDAO();
+            userSelections = dao.loadUserSelections(loginUserId);
+            if (userSelections == null) {
+                userSelections = new HashMap<>();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            userSelections = new HashMap<>();
+        }
+    }
+
+    
+    private void calTotalGoalsFromSelections()
+    {
+        totalGoals = 0;
+
+        if (userSelections != null)
+        {
+            for(Set<String> exercises :userSelections.values())
+            {
+                if (exercises != null)
+                {
+                    totalGoals +=exercises.size();
+                }
+            }
+        }
+        updateProgress();
     }
 }
