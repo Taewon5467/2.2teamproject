@@ -433,6 +433,39 @@ class SolutionDAO {
             }
         }
     }
+    public String getUserSelectionsText(String userID) throws Exception {
+    // 1) 변수 이름 통일: selections
+    Map<String, Set<String>> selections = loadUserSelections(userID);
+
+
+    if (selections == null || selections.isEmpty()) {
+        return "저장된 루틴이 없습니다.";
+    }
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("내 루틴 목록\n\n");
+
+    selections.entrySet().stream()
+        .sorted(Map.Entry.comparingByKey()) //부위 이름 정렬
+        .forEach(entry -> {
+            String partName = entry.getKey(); //"목","어깨" 키 저장
+            Set<String> exercises = entry.getValue();// 해당 부위의 운동들 딕셔너리
+
+            sb.append("[").append(partName).append("]\n");
+
+            int idx = 1;
+            for (String exName : exercises) {
+                sb.append("  ")
+                  .append(idx++)
+                  .append(". ")
+                  .append(exName)
+                  .append("\n");
+            }
+            sb.append("\n");
+        });
+        return sb.toString();
+    }
+
     // SolutionDAO (또는 RoutineDAO)에 추가
     private void deleteUserRoutines(Connection conn, String userID) throws SQLException {
         // 1. Routine_Items에서 해당 유저의 루틴 아이템 먼저 삭제
@@ -601,4 +634,5 @@ class SolutionDAO {
 //         insert insertdata = new insert();
 //         insertdata.insert_value();
 //     }
-// }
+// } 
+// 테스트 용, 지우지 말것!
