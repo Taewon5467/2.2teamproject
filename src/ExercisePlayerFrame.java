@@ -6,9 +6,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.List;
-
 public class ExercisePlayerFrame extends JFrame{
-    
+    private HistoryDAO HistoryDAO = new HistoryDAO(); // 추가, 2025-11-30
+
     public  JFrame Mainscreen; // 메인화면
     public  List<SolutionDAO.ExerciseInfo> exercises;
     public int currentIndex = 0; //현재 인덱스
@@ -244,7 +244,13 @@ private void goToNextExercise() {
     nextBtn.addActionListener(new ActionListener() {
     @Override
     public void actionPerformed(ActionEvent e) {
+        SolutionDAO.ExerciseInfo current = exercises.get(currentIndex); // 현재 운동 정보 가져오기, 추가
+        Feedback feedback = new Feedback(ExercisePlayerFrame.this, current.getExerciseName()); // 피드백 창 열기
+        feedback.setVisible(true);
 
+        if(feedback.isSubmitted()){
+            HistoryDAO.saveHistory(userId, current.getSolutionNum(), current.getRoutineId(), feedback.getRating(), feedback.getPainLevel(), feedback.getMemo());
+        }
         // 다음 운동으로 이동
         goToNextExercise();
     }

@@ -61,7 +61,8 @@ class create_table { //테이블 생성
         String tableName1 = "Solution"; // 솔루션 종류
         String tableName2 = "Routines"; // 루틴
         String tableName3 = "Routine_Items"; // 루틴 순서
-        String tableName4 = "ExerciseProgress"; //운동 진행상황
+        // String tableName4 = "ExerciseProgress"; //운동 진행상황
+        String tableName5 = "ExerciseHistory"; //운동기록, 2025-11-30 추가
 
         String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                  + "ID VARCHAR(20) BINARY NOT NULL,"
@@ -82,13 +83,11 @@ class create_table { //테이블 생성
         String sql2 = "CREATE TABLE IF NOT EXISTS " + tableName2 + " ("
                  + "Routine_ID INT NOT NULL AUTO_INCREMENT," 
                  + "ID VARCHAR(20) BINARY NOT NULL," 
-                //  + "Solution_num INT NOT NULL,"
                  + "Routine_Name VARCHAR(50) NOT NULL," 
                  + "PRIMARY KEY (Routine_ID),"
-                //  + "FOREIGN KEY (Solution_num) REFERENCES " + tableName1 + "(Solution_num),"
                  + "FOREIGN KEY (ID) REFERENCES " + tableName + "(ID)"
                  +")";
-                String sql3 = "CREATE TABLE IF NOT EXISTS " + tableName3 + " ("
+        String sql3 = "CREATE TABLE IF NOT EXISTS " + tableName3 + " ("
                  + "Routine_ID INT NOT NULL,"
                  + "Solution_num INT NOT NULL,"
                  + "Sequence INT NOT NULL DEFAULT 1," // 운동 순서
@@ -96,15 +95,20 @@ class create_table { //테이블 생성
                  + "FOREIGN KEY (Routine_ID) REFERENCES " + tableName2 + "(Routine_ID),"
                  + "FOREIGN KEY (Solution_num) REFERENCES " + tableName1 + "(Solution_num)"
                  + ")";
-                String sql4 = "CREATE TABLE IF NOT EXISTS " + tableName4 + " ("
-                 + "user_id VARCHAR(20) BINARY NOT NULL,"   
-                 + "exercise_index INT NOT NULL,"           // 몇 번째 운동
-                 + "repeat_count INT NOT NULL,"             // 몇 번째 세트 인지
-                 + "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP " //마지막으로 운동 했는지
-                 + "ON UPDATE CURRENT_TIMESTAMP,"
-                 + "PRIMARY KEY (user_id),"                 // 유저당 1개만 저장
-                 + "FOREIGN KEY (user_id) REFERENCES " + tableName + "(ID)"
-                 + ")";
+        String sql5 = "CREATE TABLE IF NOT EXISTS " + tableName5 + " (" //2025-11-30 추가
+                + "Log_ID INT NOT NULL AUTO_INCREMENT," 
+                + "user_id VARCHAR(20) BINARY NOT NULL," 
+                + "Solution_num INT NOT NULL,"
+                + "Routine_ID INT," // 루틴 없이 개별 운동할 수도 있으므로 NULL 허용 가능
+                + "Rating INT DEFAULT 0," // 평점
+                + "Pain_Level INT DEFAULT 0," // 통증 강도
+                + "Memo TEXT," // 메모
+                + "Completed_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP," // 수행 시간
+                + "PRIMARY KEY (Log_ID),"
+                + "FOREIGN KEY (user_id) REFERENCES " + tableName + "(ID),"
+                + "FOREIGN KEY (Solution_num) REFERENCES " + tableName1 + "(Solution_num),"
+                + "FOREIGN KEY (Routine_ID) REFERENCES " + tableName2 + "(Routine_ID)"
+                + ")";
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -121,8 +125,10 @@ class create_table { //테이블 생성
                     System.out.println("루틴(선택하여 만든 솔루션)테이블 " + tableName2 + " 생성 완료 (또는 이미 존재함)");
                     stmt.executeUpdate(sql3);
                     System.out.println("루틴(선택하여 만든 솔루션)테이블 " + tableName3 + " 생성 완료 (또는 이미 존재함)");
-                    stmt.executeUpdate(sql4);
-                    System.out.println("운동 진행상황 테이블 " + tableName4 + " 생성 완료 (또는 이미 존재함)");
+                    // stmt.executeUpdate(sql4);
+                    // System.out.println("운동 진행상황 테이블 " + tableName4 + " 생성 완료 (또는 이미 존재함)");
+                    stmt.executeUpdate(sql5); //2025-11-30 추가
+                    System.out.println("운동 기록(통계용) 테이블 " + tableName5 + " 생성 완료 (또는 이미 존재함)");
                  }
             } catch(ClassNotFoundException e) {
                 System.out.println("JDBC 드라이버를 찾을 수 없습니다.");
@@ -758,20 +764,28 @@ private void deleteRoutine(Connection conn, int routineId) throws SQLException {
     //운동 한 개 정보를 담기 위한 DTO
     public static class ExerciseInfo
     {
+
+        private final int routineId; //루틴 ID
+        private final int solutionNum; //솔루션 번호
         private final String routineName; //루틴 이름
         private final String exerciseName; //운동 이름
         private final String description; //설명
         private final String imagePath;
         private final int sequence; //루틴 안에 순서
 
-        public ExerciseInfo(String routineName, String exerciseName, String description, String imagePath ,int sequence)
+        // 2025-11-30 추가: routineId, solutionNum 필드
+        public ExerciseInfo(int routineId, int solutionNum, String routineName, String exerciseName, String description, String imagePath ,int sequence)
         {
+            this.routineId =routineId;
+            this.solutionNum =solutionNum;
             this.routineName =routineName;
             this.exerciseName =exerciseName;
             this.description =description;
             this.imagePath =imagePath;
             this.sequence =sequence;
         }
+    public int getRoutineId() { return routineId; }
+    public int getSolutionNum() { return solutionNum; }
     public String getRoutineName() { return routineName; }
     public String getExerciseName() { return exerciseName; }
     public String getDescription() { return description; }
@@ -787,9 +801,10 @@ private void deleteRoutine(Connection conn, int routineId) throws SQLException {
     java.util.List<ExerciseInfo> result = new java.util.ArrayList<>();
 
 
-    String sql =
-        "SELECT R.Routine_Name, S.Solution_name, S.Description, " +
-        "       S.imagePath, RI.Sequence " +   
+    String sql = 
+        "SELECT R.Routine_ID, S.Solution_num, " + // 2025-11-30 추가
+        "R.Routine_Name, S.Solution_name, S.Description, " +
+        "S.imagePath, RI.Sequence " +   
         "FROM Routines R " +
         "JOIN Routine_Items RI ON R.Routine_ID = RI.Routine_ID " +
         "JOIN Solution S ON RI.Solution_num = S.Solution_num " +
@@ -803,42 +818,52 @@ private void deleteRoutine(Connection conn, int routineId) throws SQLException {
 
         try (ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
+                int rId = rs.getInt("Routine_ID"); // 2025-11-30 추가
+                int sNum = rs.getInt("Solution_num"); // 2025-11-
                 String routineName   = rs.getString("Routine_Name");
                 String exerciseName  = rs.getString("Solution_name");
                 String description   = rs.getString("Description");   // NULL일 수도 있음
                 String imagePath     = rs.getString("imagePath");
                 int sequence         = rs.getInt("Sequence");
 
-                ExerciseInfo info = new ExerciseInfo(
-                        routineName,
-                        exerciseName,
-                        description,
-                        imagePath,
-                        sequence
-                );
+                ExerciseInfo info = new ExerciseInfo(rId, sNum, routineName, exerciseName, description, imagePath, sequence);
                 result.add(info);
             }
         }
     }
 
     return result;
+    }
 }
+class HistoryDAO {
+    private String url = "jdbc:mysql://localhost:3306/Accounts";
+    private String id = "root";
+    private String pw = "ansxodnjs5467";
+    // 운동 기록 저장 메서드
+    public void saveHistory(String userId, int solutionNum, int routineId, int rating, int painLevel, String memo){
+        String sql = "INSERT INTO ExerciseHistory " + 
+                     "(user_id, Solution_num, Routine_ID, Rating, Pain_Level, memo) " +
+                     "VALUES (?, ?, ?, ?, ?, ?)";
 
-}
+        try (Connection conn = DriverManager.getConnection(url, id, pw);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-// public class DataBase {
-//     public static void main(String[] args) {
-//         //데이터베이스 생성
-//         create_database dbcreate = new create_database();
-//         dbcreate.DataBase();
+            pstmt.setString(1, userId);
+            pstmt.setInt(2, solutionNum);
+            pstmt.setInt(3, routineId);
+            pstmt.setInt(4, rating);
+            pstmt.setInt(5, painLevel);
+            pstmt.setString(6, memo);
 
-//         //테이블 생성
-//         create_table tablecreate = new create_table();
-//         tablecreate.table();
+            int result = pstmt.executeUpdate();
 
-//         //파일 읽어서 값 삽입
-//         insert insertdata = new insert();
-//         insertdata.insert_value();
-//     }
-// } 
-// 테스트 용, 지우지 말것!
+            if(result > 0){
+                System.out.println("운동 기록 저장 성공 for user: " + userId);
+            } else {
+                System.out.println("운동 기록 저장 실패 for user: " + userId);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("운동 기록 저장 중 오류 발생 for user: " + userId);
+    }
+}}
