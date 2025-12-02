@@ -839,9 +839,10 @@ class HistoryDAO {
     private String url = "jdbc:mysql://localhost:3306/Accounts";
     private String id = "root";
     private String pw = "ansxodnjs5467";
-    // 운동 기록 저장 메서드
-    public void saveHistory(String userId, int solutionNum, int routineId, int rating, int painLevel, String memo){
-        String sql = "INSERT INTO ExerciseHistory " + 
+
+    // 1. 운동 기록 저장 메서드
+    public void saveHistory(String userId, int solutionNum, int routineId, int rating, int painLevel, String memo) {
+        String sql = "INSERT INTO ExerciseHistory " +
                      "(user_id, Solution_num, Routine_ID, Rating, Pain_Level, memo) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -857,7 +858,7 @@ class HistoryDAO {
 
             int result = pstmt.executeUpdate();
 
-            if(result > 0){
+            if (result > 0) {
                 System.out.println("운동 기록 저장 성공 for user: " + userId);
             } else {
                 System.out.println("운동 기록 저장 실패 for user: " + userId);
@@ -865,5 +866,50 @@ class HistoryDAO {
         } catch (SQLException e) {
             e.printStackTrace();
             System.out.println("운동 기록 저장 중 오류 발생 for user: " + userId);
-    }
-}}
+        }
+    } 
+
+    // 통계 가져오는 메서드
+    public Map<String, double[]> getWeeklyStatistics(String userId) {
+            Map<String, double[]> stats = new java.util.TreeMap<>(); 
+
+            System.out.println("====== [DB 조회 최종 수정] ======");
+            System.out.println("타겟 ID: " + userId); 
+ 
+            // GROUP BY 뒤를 DATE(Completed_Date)에서 -> DATE_FORMAT(...) 으로 변경
+            // 이렇게 하면 SELECT 한 내용과 완전히 똑같아져서 에러가 사라짐
+            String sql = "SELECT DATE_FORMAT(Completed_Date, '%m-%d') as date, " +
+                        "AVG(Rating) as avg_rating, " +
+                        "AVG(Pain_Level) as avg_pain " +
+                        "FROM ExerciseHistory " +
+                        "WHERE user_id = ? " +
+                        "AND Completed_Date >= DATE_SUB(NOW(), INTERVAL 7 DAY) " + 
+                        "GROUP BY DATE_FORMAT(Completed_Date, '%m-%d') " + // ★ 여기가 핵심 수정 사항!
+                        "ORDER BY date ASC";
+
+            try (Connection conn = DriverManager.getConnection(url, id, pw);
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, userId); // 사용자 ID 설정
+
+                try (ResultSet rs = pstmt.executeQuery()) { // 결과 집합 처리
+                    while (rs.next()) {
+                        String date = rs.getString("date"); 
+                        double rating = rs.getDouble("avg_rating");
+                        double pain = rs.getDouble("avg_pain");
+                    
+                        System.out.println("  -> 데이터 확보: " + date + " / 평점:" + rating + " / 통증:" + pain);
+
+                        stats.put(date, new double[]{rating, pain}); // 날짜별로 평점과 통증 수준 저장
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        
+            System.out.println("최종 조회된 날짜 수: " + stats.size());
+            System.out.println("===========================");
+        
+            return stats;
+        }
+}
