@@ -9,7 +9,7 @@ import java.util.List;
 public class Mainscreen extends JFrame {
     public JMenuBar menuBar;
     public String[] categories = {"전체", "목", "어깨", "팔꿈치", "손목", "허리", "무릎", "발목","고관절"};
-    public JButton createButton, deleteButton,startButton;
+    public JButton createButton, deleteButton,startButton, statisticsButton;
     public JLabel progressLabel;
     private int totalGoals = 0; //전체 목표 개수
     private int doneGoals = 0; // 완료한 목표 개수
@@ -77,7 +77,7 @@ public class Mainscreen extends JFrame {
         progressBar.setStringPainted(true);
         topPanel.add(progressBar, gbc);
         
-        // 생성 & 삭제 버튼 패널
+        // 생성 & 삭제 & 통계 버튼 패널
         createButton = new JButton("생성");
         createButton.addActionListener(e -> {
             new CreateApp();
@@ -89,14 +89,21 @@ public class Mainscreen extends JFrame {
             new DeleteApp();
             setVisible(false);
         });
+
+        statisticsButton = new JButton("통계");
+        statisticsButton.addActionListener(e -> {
+            new statisticsApp();
+            setVisible(false);
+        });
         //시작 버튼 패널
         startButton = new JButton("시작");
         startButton.addActionListener(e -> onStartClicked());
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 45, 0));
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 10, 0)); // 추가     
         buttonPanel.add(createButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(startButton);
+        buttonPanel.add(statisticsButton);
 
         gbc.gridy = 3;
         gbc.insets = new Insets(4, 10, 8, 2);

@@ -29,7 +29,7 @@ public class ExercisePlayerFrame extends JFrame{
     //타이머 관련
     public javax.swing.Timer timer;
     public int remainingSec;
-    private static final int DEFAULT_TIME =5;
+    private static final int DEFAULT_TIME =1; // 타이머 기본 시간(초)
         private static final int DEFAULT_REPEAT_COUNT = 3;
         
     //로직 생성자 
